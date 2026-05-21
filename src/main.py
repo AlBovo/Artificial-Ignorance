@@ -1,3 +1,4 @@
+from trainer import training, test, save_model
 from lib import compute, read_input
 import sys
 
@@ -7,8 +8,7 @@ FEATURES = 5
 def calculate(weights, bias, data):
     return compute(weights, bias, data, threshold=THRESHOLD, features=FEATURES)
 
-def cli():
-    weights, bias = read_input("input.txt", features=FEATURES)
+def cli(weights: list[float], bias: float):
     questions = [
         "Artista famoso?",
         "Bel meteo?",
@@ -36,8 +36,7 @@ def cli():
     else:
         print("La festa sarà un fallimento.")
 
-def static():
-    weights, bias = read_input("input.txt", features=FEATURES)
+def static(weights: list[float], bias: float):
     with open("data.txt", "r") as f:
         data = [int(line.strip()) for line in f.readlines()]
     n_chunks = len(data) // FEATURES
@@ -51,7 +50,22 @@ def static():
 
 if __name__ == "__main__":
     run = sys.argv[1] if len(sys.argv) > 1 else "cli"
-    if run == "cli":
-        cli()
+
+    if run == "train":
+        weights, bias = training(data_path="test/data.txt", features=FEATURES, threshold=THRESHOLD)
+        save_model("test/training.txt", weights, bias)
+    elif run == "test":
+        weights, bias = read_input("test/training.txt", features=FEATURES)
+        test(weights, bias, data_path="test/data.txt", features=FEATURES)
+    elif run == "cli":
+        mode = sys.argv[2] if len(sys.argv) > 2 else "train"
+        try:
+            weights, bias = read_input(f"test/{"training" if mode == "train" else "input"}.txt", features=FEATURES)
+        except SystemExit:
+            weights, bias = training(data_path="test/data.txt", features=FEATURES, threshold=THRESHOLD)
+            save_model("test/training.txt", weights, bias)
+        print(weights, bias)
+        cli(weights, bias)
     else:
-        static()
+        weights, bias = read_input("test/input.txt", features=FEATURES)
+        static(weights, bias)
